@@ -49,6 +49,11 @@ namespace NUnit.Framework
             _reason = reason;
         }
 
+        public IgnoreAttribute()
+        {
+            _reason = "Not specified";
+        }
+
         /// <summary>
         /// The date in the future to stop ignoring the test as a string in UTC time. 
         /// For example for a date and time, "2014-12-25 08:10:00Z" or for just a date,
