@@ -469,7 +469,6 @@ namespace Mono.Options
 		}
 	}
 
-	[Serializable]
 	public class OptionException : Exception {
 		private string option;
 
