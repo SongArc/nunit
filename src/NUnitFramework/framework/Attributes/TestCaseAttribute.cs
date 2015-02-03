@@ -42,7 +42,7 @@ namespace NUnit.Framework
         private object _expectedResult;
         private Type _typeOf;
         private IPropertyBag _properties;
-#if !PORTABLE
+#if !PORTABLE && !XAMARIN
         private readonly PlatformHelper _platformHelper = new PlatformHelper();
 #endif
 
@@ -400,8 +400,8 @@ namespace NUnit.Framework
         public IEnumerable<TestMethod> BuildFrom(MethodInfo method, Test suite)
         {
             TestMethod test = new NUnitTestCaseBuilder().BuildTestMethod(method, suite, GetParametersForTestCase(method));
-            
-#if !PORTABLE
+
+#if !PORTABLE && !XAMARIN
             if (test.RunState != RunState.NotRunnable && 
                 test.RunState != RunState.Ignored && 
                 !_platformHelper.IsPlatformSupported(this))
