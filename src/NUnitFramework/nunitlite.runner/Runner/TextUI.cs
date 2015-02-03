@@ -34,6 +34,7 @@ using NUnit.Framework.Internal;
 using NUnit.Framework.Internal.Builders;
 using NUnit.Framework.Internal.Filters;
 using System.Globalization;
+using System.Text;
 
 namespace NUnitLite.Runner
 {
@@ -85,6 +86,10 @@ namespace NUnitLite.Runner
 #if !SILVERLIGHT && !NETCF
         private TeamCityEventListener _teamCity;
 #endif
+
+        public event EventHandler<TestResultEventArgs> FixtureStarted;
+        public event EventHandler<TestResultEventArgs> FixtureFinished;
+ 
         #region Constructors
 
         /// <summary>
@@ -114,7 +119,7 @@ namespace NUnitLite.Runner
         /// from Main.
         /// </summary>
         /// <param name="args">An array of arguments</param>
-        public int Execute(string[] args)
+        public string Execute(string[] args)
         {
             // NOTE: Execute must be directly called from the
             // test assembly in order for the mechanism to work.
@@ -155,7 +160,7 @@ namespace NUnitLite.Runner
             if (_options.ShowHelp)
             {
                 WriteHelpText();
-                return OK;
+                return "OK";
             }
 
             if (_options.ErrorMessages.Count > 0)
@@ -165,7 +170,7 @@ namespace NUnitLite.Runner
 
                 _options.WriteOptionDescriptions(_outWriter);
 
-                return INVALID_ARG;
+                return "INVALID_ARG";
             }
             Assembly callingAssembly = Assembly.GetCallingAssembly();
 
@@ -210,21 +215,21 @@ namespace NUnitLite.Runner
                 // Randomizer.InitialSeed = _commandLineOptions.InitialSeed;
 
                 if (_runner.Load(assembly, runSettings) != null)
-                    return _options.Explore ? ExploreTests() : RunTests(filter);
+                    return RunTests(filter);
 
                 var assemblyName = AssemblyHelper.GetAssemblyName(assembly);
-                Console.WriteLine("No tests found in assembly {0}", assemblyName.Name);
-                return OK;
+                Debug.WriteLine("No tests found in assembly {0}", assemblyName.Name);
+                return "OK";
             }
             catch (FileNotFoundException ex)
             {
                 _outWriter.WriteLine(ColorStyle.Error, ex.Message);
-                return FILE_NOT_FOUND;
+                return "FILE_NOT_FOUND";
             }
             catch (Exception ex)
             {
                 _outWriter.WriteLine(ColorStyle.Error, ex.ToString());
-                return UNEXPECTED_ERROR;
+                return "UNEXPECTED_ERROR";
             }
             finally
             {
@@ -248,7 +253,7 @@ namespace NUnitLite.Runner
 
         #region Helper Methods
 
-        private int RunTests(ITestFilter filter)
+        private string RunTests(ITestFilter filter)
         {
             var startTime = DateTime.UtcNow;
 
@@ -264,8 +269,14 @@ namespace NUnitLite.Runner
                     outputManager.WriteResultFile(result, spec);
             }
 
-            var summary = reporter.Summary;
-            return summary.FailureCount + summary.ErrorCount + summary.InvalidCount;
+            var sb = new StringBuilder();
+            using (var writer = new StringWriter(sb))
+            {
+                var outputWriter = new NUnit3XmlOutputWriter();
+                outputWriter.WriteResultFile(result, writer);
+            }
+
+            return sb.ToString();
         }
 
         private int ExploreTests()
@@ -524,6 +535,9 @@ namespace NUnitLite.Runner
             if (_teamCity != null)
                 _teamCity.TestStarted(test);
 #endif
+
+            if (!test.IsSuite && this.FixtureStarted != null)
+                this.FixtureStarted(this, new TestResultEventArgs(test.Name));
         }
 
         /// <summary>
@@ -552,6 +566,25 @@ namespace NUnitLite.Runner
                 _outWriter.Write(ColorStyle.Output, result.Output);
                 if (!result.Output.EndsWith("\n"))
                     _outWriter.WriteLine();
+            }
+
+            if (!result.Test.IsSuite && this.FixtureFinished != null)
+            {
+                switch (result.ResultState.Status)
+                {
+                    case TestStatus.Passed:
+                        this.FixtureFinished(this, new TestResultEventArgs("Passed " + result.Name));
+                        break;
+                    case TestStatus.Inconclusive:
+                        this.FixtureFinished(this, new TestResultEventArgs("Inconclusive " + result.Name));
+                        break;
+                    case TestStatus.Skipped:
+                        this.FixtureFinished(this, new TestResultEventArgs("Skipped " + result.Name));
+                        break;
+                    case TestStatus.Failed:
+                        this.FixtureFinished(this, new TestResultEventArgs("Failed " + result.Name));
+                        break;
+                }
             }
         }
 
