@@ -496,8 +496,12 @@ namespace NUnitLite.Runner
         /// <returns></returns>
         public static TestFilter CreateTestFilter(ConsoleOptions options)
         {
-            TestFilter namefilter = options.TestList.Count > 0
+            TestFilter nameIncludefilter = options.TestList.Count > 0
                 ? new SimpleNameFilter(options.TestList)
+                : TestFilter.Empty;
+
+            TestFilter nameExcludeFilter = options.ExcludeTestList.Count > 0
+                ? new NotFilter(new SimpleNameFilter(options.ExcludeTestList))
                 : TestFilter.Empty;
 
             TestFilter includeFilter = string.IsNullOrEmpty(options.Include)
@@ -508,17 +512,23 @@ namespace NUnitLite.Runner
                 ? TestFilter.Empty
                 : new NotFilter(new SimpleCategoryExpression(options.Exclude).Filter);
 
+            TestFilter nameFilter = nameIncludefilter.IsEmpty
+                ? nameExcludeFilter
+                : nameExcludeFilter.IsEmpty
+                    ? nameIncludefilter
+                    : new AndFilter(nameIncludefilter, nameExcludeFilter);
+
             TestFilter catFilter = includeFilter.IsEmpty
                 ? excludeFilter
                 : excludeFilter.IsEmpty
                     ? includeFilter
                     : new AndFilter(includeFilter, excludeFilter);
 
-            return namefilter.IsEmpty
+            return nameFilter.IsEmpty
                 ? catFilter
                 : catFilter.IsEmpty
-                    ? namefilter
-                    : new AndFilter(namefilter, catFilter);
+                    ? nameFilter
+                    : new AndFilter(nameFilter, catFilter);
         }
 
         #endregion
@@ -537,7 +547,7 @@ namespace NUnitLite.Runner
 #endif
 
             if (!test.IsSuite && this.FixtureStarted != null)
-                this.FixtureStarted(this, new TestResultEventArgs(test.Name));
+                this.FixtureStarted(this, new TestResultEventArgs(test.FullName));
         }
 
         /// <summary>
@@ -573,16 +583,16 @@ namespace NUnitLite.Runner
                 switch (result.ResultState.Status)
                 {
                     case TestStatus.Passed:
-                        this.FixtureFinished(this, new TestResultEventArgs("Passed " + result.Name));
+                        this.FixtureFinished(this, new TestResultEventArgs("Passed " + result.FullName));
                         break;
                     case TestStatus.Inconclusive:
-                        this.FixtureFinished(this, new TestResultEventArgs("Inconclusive " + result.Name));
+                        this.FixtureFinished(this, new TestResultEventArgs("Inconclusive " + result.FullName));
                         break;
                     case TestStatus.Skipped:
-                        this.FixtureFinished(this, new TestResultEventArgs("Skipped " + result.Name));
+                        this.FixtureFinished(this, new TestResultEventArgs("Skipped " + result.FullName));
                         break;
                     case TestStatus.Failed:
-                        this.FixtureFinished(this, new TestResultEventArgs("Failed " + result.Name));
+                        this.FixtureFinished(this, new TestResultEventArgs("Failed " + result.FullName));
                         break;
                 }
             }

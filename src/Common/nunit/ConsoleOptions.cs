@@ -61,6 +61,9 @@ namespace NUnit.Common
             this.Add("test=", "Comma-separated list of {NAMES} of tests to run or explore. This option may be repeated.",
                 v => ((List<string>)TestList).AddRange(TestNameParser.Parse(RequiredValue(v, "--test"))));
 
+            this.Add("excludetest=", "Comma-separated list of {NAMES} of tests to exclude. This option may be repeated.",
+                v => ((List<string>)ExcludeTestList).AddRange(TestNameParser.Parse(RequiredValue(v, "--excludetest"))));
+
             this.Add("testlist=", "File {PATH} containing a list of tests to run, one per line. This option may be repeated.",
                 v =>
             {
@@ -215,6 +218,8 @@ namespace NUnit.Common
 
         private List<string> testList = new List<string>();
         public IList<string> TestList { get { return testList; } }
+        private List<string> excludeTestList = new List<string>();
+        public IList<string> ExcludeTestList { get { return excludeTestList; } }
 
         public string Include { get; private set; }
 
