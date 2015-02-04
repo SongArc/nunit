@@ -83,9 +83,10 @@
     <Compile Include="Runner\TextUI.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\framework\nunit.framework-android.csproj">
-      <Project>{1fc6da0f-0bd9-4573-9ff9-46f7a2bb920b}</Project>
-      <Name>nunit.framework-android</Name>
+    <ProjectReference Include="..\framework\nunit.framework-ios.csproj">
+      <Project>{b9a2e5fa-dad6-4238-a8fc-d1eb3fb4e878}</Project>
+      <Name>nunit.framework-ios</Name>
+      <IsAppExtension>false</IsAppExtension>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.CSharp.targets" />
